@@ -2,23 +2,30 @@
     import Circle from './Circle.svelte';
 
     let diameter = 10;
+
     $: radius = diameter / 2;
-    $: volume = Math.PI * Math.pow(radius, 2);
+    $: volume = Number(
+                    Math.PI * Math.pow(radius, 2)
+                ).toFixed(1);
 </script>
 
 <h1>Why you should (almost) always buy a bigger pizza</h1>
 
-<p>The volume of a pizza doesn't scale linearly with its size. The volume is proportional to the square of the radius.</p>
+<p>The volume of a pizza doesn't scale linearly with its size. Instead, the volume is proportional to the square of the radius.</p>
+<br />
 
 <label>
-    <input type="range" bind:value={diameter} min="8" max="15">
+    {diameter}in diameter
+    <input type="range" bind:value={diameter} min="6" max="20">
 </label>
 
+
 <Circle {radius} />
-<p>Volume: {volume}</p>
+<p>= {volume}in&#179; volume</p>
 
+<br />
 <p>This means that a larger pizza not only gives you more pizza but a <b>disproportionately</b> larger amount.</p>
-
-<p>Furthermore, the relationship between a pizza's volume and the price of the pie are not likely to be perfectly aligned.</p>
-
-<p>It is more than likely that you are paying a premium for smaller pizzas.</p>
+<p><i>A 20" pizza is not 2 but <b>4 times</b> larger than a 10" pizza.</i></p>
+<br />
+<p>Furthermore, the relationship between a pizza's volume and it's price is not likely to be in alignment.</p>
+<p>It is very difficult to perceive this difference, but in reality it is more than likely that you are paying a premium when ordering a smaller pie.</p>

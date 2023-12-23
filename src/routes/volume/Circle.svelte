@@ -14,7 +14,6 @@
     #circle {
         background-color: lightblue;
         border-radius: 50%;
-        margin: 20px auto;
         opacity: 0.5;
     }
 </style>
