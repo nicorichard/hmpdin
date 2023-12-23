@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="js">
     import { base } from '$app/paths';
 </script>
 
@@ -8,5 +8,3 @@
 </nav>
 
 <slot />
-
-export const prerender = true;
