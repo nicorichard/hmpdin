@@ -50,66 +50,70 @@
 
 <h1>How many pizzas do I need?</h1>
 
-
 <form on:submit|preventDefault={handleSubmit}>
-    <label>
-        hunger
-        <select
-            bind:value={hunger}
-            on:change={onChange}
-        >
-            {#each hungerOptions as level}
-                <option value={level}>{level.title}</option>
-            {/each}
-        </select>
-    </label>
+    <h4>hunger</h4>
+    {#each hungerOptions as level}
+        <div>
+            <label>
+                <input
+                    type="radio"
+                    bind:group={hunger}
+                    value={level}
+                    on:change={onChange}
+                />
+                {level.title}
+            </label>
+        </div>
+    {/each}
 
-    <label>
-        crust
-        <select
-            bind:value={crust}
-            on:change={onChange}
-        >
-            {#each crustOptions as option}
-                <option value={option}>{option.title}</option>
-            {/each}
-        </select>
-    </label>
+    <h4>crust</h4>
+    {#each crustOptions as option}
+    <div>
+        <label>
+            <input
+                type="radio"
+                bind:group={crust}
+                value={option}
+                on:change={onChange}
+            />
+            {option.title}
+        </label>
+    </div>
+    {/each}
 
-    <label>
-        size
-        <input
-            bind:value={size}
-            on:change={onChange}
-            type="number"
-            min="1"
-        />
-    </label>
+    <h4>size (inches)</h4>
+    <input
+        bind:value={size}
+        on:change={onChange}
+        type="number"
+        min="1"
+    />
 
-    <label>
-        people
-        <input
-            bind:value={people}
-            on:change={onChange}
-            type="number" 
-            min="1"
-        />
-    </label>
+    <h4>people eating</h4>
+    <input
+        bind:value={people}
+        on:change={onChange}
+        type="number" 
+        min="1"
+    />
 
-    <label>
-        vegetarians
-        <input
-            bind:value={vegetarians}
-            on:change={onChange}
-            type="number" 
-            min="0"
-            max={people}
-        />
-    </label>
+    <h4>vegetarians</h4>
+    <input
+        bind:value={vegetarians}
+        on:change={onChange}
+        type="number" 
+        min="0"
+        max={people}
+    />
+
+    <br />
+    <br />
+    <br />
+    <br />
 
     <button type="submit">Calculate</button>
 
     {#if result > 0}
-        <p>You need {result} pizzas.</p>
+        <p>You need {result} pizza{result > 1 ? "s" : ""}</p>
     {/if}
 </form>
