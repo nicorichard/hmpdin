@@ -9,7 +9,7 @@
 
 <label>
     {diameter}in diameter
-    <input type="range" bind:value={diameter} min="6" max="20">
+    <input type="range" bind:value={diameter} min="1" max="30">
     {volume}in&#179; volume
     <div>
         <Pizza {radius} />
