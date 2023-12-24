@@ -5,6 +5,7 @@
 
     let size = 14;
     let people = 1;
+    let vegetarians = 0;
 
     let crustOptions = [
         {
@@ -35,11 +36,15 @@
     let hunger = hungerOptions[1];
 
 	function handleSubmit() {
-        result = calculate(hunger.value, people, size, crust.multiplier);
+        result = calculate(hunger.value, people, size, crust.multiplier, vegetarians);
 	}
 
     function onChange() {
         result = 0;
+
+        if (vegetarians > people) {
+            vegetarians = people;
+        }
     }
 </script>
 
@@ -88,6 +93,17 @@
             on:change={onChange}
             type="number" 
             min="1"
+        />
+    </label>
+
+    <label>
+        vegetarians
+        <input
+            bind:value={vegetarians}
+            on:change={onChange}
+            type="number" 
+            min="0"
+            max={people}
         />
     </label>
 

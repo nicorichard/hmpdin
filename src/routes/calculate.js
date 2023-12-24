@@ -21,9 +21,25 @@ function volumeMultiplier(diameter, crustMultiplier) {
  * @param {number} diameter
  * @param {number} crustMultiplier
  */
-export default function calculate(hungerLevel, people, diameter, crustMultiplier) {
+function _calculate(hungerLevel, people, diameter, crustMultiplier) {
     const volumeMod = volumeMultiplier(diameter, crustMultiplier);
     const floatResult = (hungerLevel * people) / 8 * volumeMod;
 
     return Math.ceil(floatResult);
+}
+
+/**
+ * @param {number} hungerLevel
+ * @param {number} people
+ * @param {number} diameter
+ * @param {number} crustMultiplier
+ * @param {number} vegetarians
+ */
+export default function calculate(hungerLevel, people, diameter, crustMultiplier, vegetarians) {
+
+    if (vegetarians > 0) {
+        return _calculate(hungerLevel, people - vegetarians, diameter, crustMultiplier) + _calculate(hungerLevel, vegetarians, diameter, crustMultiplier);
+    } else {
+        return _calculate(hungerLevel, people, diameter, crustMultiplier)
+    }
 }
