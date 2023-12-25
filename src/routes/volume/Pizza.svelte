@@ -1,4 +1,6 @@
 <script>
+    import { base } from '$app/paths';
+    
     /**
      * @type {number}
      */
@@ -16,7 +18,7 @@
 </script>
 
 <div id="circle" style:width style:height>
-    <img src="/pizza.png" alt="A pizza" style:width style:height/>
+    <img src="{base}/pizza.png" alt="A pizza" style:width style:height/>
     <div id="centered">
         {#if text}
             <span class="text">{text}</span>
