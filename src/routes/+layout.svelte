@@ -23,9 +23,6 @@
             <a href="{base}/volume" class="nav-link">
                 <span class="topping">📏</span> Pizza Math
             </a>
-            <a href="{base}/about" class="nav-link">
-                <span class="topping">🍅</span> About
-            </a>
         </nav>
     </header>
 
