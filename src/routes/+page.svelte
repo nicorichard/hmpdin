@@ -1,12 +1,11 @@
 <script>
-	import calculate from './calculate.js';
+	import { calculateWithRestrictions } from './calculate.js';
 
-	let result = 0;
+	/** @type {import('./calculate.js').PizzaBreakdown | null} */
+	let result = null;
 	let showCelebration = false;
 
     let size = 14;
-    let people = 1;
-    let vegetarians = 0;
 
     let crustOptions = [
         {
@@ -46,18 +45,84 @@
     ];
     let hunger = hungerOptions[1];
 
+    // Dietary groups
+    let dietaryGroups = {
+        meatLovers: 0,
+        flexible: 2,
+        vegetarian: 0,
+        halal: 0,
+        glutenFree: 0
+    };
+
+    let dietaryOptions = [
+        {
+            key: 'meatLovers',
+            emoji: '🥩',
+            title: 'Meat Lovers',
+            description: 'Need meat on their pizza!',
+            color: '#d32f2f'
+        },
+        {
+            key: 'flexible',
+            emoji: '🤷',
+            title: 'Flexible',
+            description: 'Happy with anything',
+            color: '#9e9e9e'
+        },
+        {
+            key: 'vegetarian',
+            emoji: '🥬',
+            title: 'Vegetarian',
+            description: 'No meat please',
+            color: '#4caf50'
+        },
+        {
+            key: 'halal',
+            emoji: '☪️',
+            title: 'Halal',
+            description: 'Veggie is the safe bet',
+            color: '#1976d2'
+        },
+        {
+            key: 'glutenFree',
+            emoji: '🌾',
+            title: 'Gluten-Free',
+            description: 'Needs separate GF pizza',
+            color: '#ff9800'
+        }
+    ];
+
+    $: totalPeople = Object.values(dietaryGroups).reduce((a, b) => a + b, 0);
+
 	function handleSubmit() {
-        result = calculate(hunger.value, people, size, crust.multiplier, vegetarians);
+        if (totalPeople === 0) return;
+
+        result = calculateWithRestrictions(
+            hunger.value,
+            dietaryGroups,
+            size,
+            crust.multiplier
+        );
         showCelebration = true;
         setTimeout(() => showCelebration = false, 3000);
 	}
 
     function onChange() {
-        result = 0;
+        result = null;
         showCelebration = false;
+    }
 
-        if (vegetarians > people) {
-            vegetarians = people;
+    function incrementGroup(key) {
+        dietaryGroups[key]++;
+        dietaryGroups = dietaryGroups; // trigger reactivity
+        onChange();
+    }
+
+    function decrementGroup(key) {
+        if (dietaryGroups[key] > 0) {
+            dietaryGroups[key]--;
+            dietaryGroups = dietaryGroups;
+            onChange();
         }
     }
 
@@ -73,6 +138,36 @@
     }
 
     $: celebrationPizzas = showCelebration ? getRandomPizzas(15) : [];
+
+    // Complexity-based commentary
+    const complexityMessages = {
+        simple: [
+            "Easy peasy! Just order and enjoy 🎉",
+            "Simple order, simple life ✨",
+            "No drama, just pizza 🍕"
+        ],
+        moderate: [
+            "A few preferences to juggle, but totally manageable 👍",
+            "Nothing the pizza place can't handle!",
+            "Slightly spicy order, but you've got this 🌶️"
+        ],
+        complex: [
+            "Okay, this is getting interesting... 🤔",
+            "You might want to write this down before calling 📝",
+            "Your pizza order has entered expert mode 🎮"
+        ],
+        chaotic: [
+            "Whoa there! This order is a SITUATION 😅",
+            "You might need a spreadsheet for this one 📊",
+            "The pizza place is gonna need a minute... ⏰",
+            "Congratulations, you've achieved pizza chaos! 🎊"
+        ]
+    };
+
+    function getComplexityMessage(complexity) {
+        const messages = complexityMessages[complexity] || complexityMessages.simple;
+        return messages[Math.floor(Math.random() * messages.length)];
+    }
 </script>
 
 {#if showCelebration}
@@ -135,18 +230,16 @@
         </div>
     </div>
 
-    <div class="section numbers-section">
-        <div class="number-input">
-            <h4>📐 Pizza size</h4>
-            <div class="input-with-unit">
-                <input
-                    bind:value={size}
-                    on:change={onChange}
-                    type="number"
-                    min="1"
-                />
-                <span class="unit">inches</span>
-            </div>
+    <div class="section">
+        <h4>📐 Pizza size</h4>
+        <div class="size-control">
+            <input
+                bind:value={size}
+                on:change={onChange}
+                type="number"
+                min="1"
+            />
+            <span class="unit">inches</span>
             <span class="size-hint">
                 {#if size < 10}
                     personal pan 🤏
@@ -159,75 +252,123 @@
                 {/if}
             </span>
         </div>
+    </div>
 
-        <div class="number-input">
-            <h4>👥 People eating</h4>
-            <input
-                bind:value={people}
-                on:change={onChange}
-                type="number"
-                min="1"
-            />
-            <span class="people-hint">
-                {#if people === 1}
-                    just you? self care! 💅
-                {:else if people <= 4}
-                    cozy group 🏠
-                {:else if people <= 10}
-                    party time! 🎉
-                {:else}
-                    feeding an army! 🎪
-                {/if}
-            </span>
+    <div class="section dietary-section">
+        <h4>👥 Who's eating? <span class="total-badge">{totalPeople} total</span></h4>
+        <p class="dietary-hint">Add people to each dietary category:</p>
+
+        <div class="dietary-grid">
+            {#each dietaryOptions as option}
+                <div class="dietary-card" style="--accent-color: {option.color}">
+                    <div class="dietary-header">
+                        <span class="dietary-emoji">{option.emoji}</span>
+                        <div class="dietary-info">
+                            <span class="dietary-title">{option.title}</span>
+                            <span class="dietary-desc">{option.description}</span>
+                        </div>
+                    </div>
+                    <div class="dietary-controls">
+                        <button
+                            type="button"
+                            class="count-btn minus"
+                            on:click={() => decrementGroup(option.key)}
+                            disabled={dietaryGroups[option.key] === 0}
+                        >−</button>
+                        <span class="count-value" class:has-value={dietaryGroups[option.key] > 0}>
+                            {dietaryGroups[option.key]}
+                        </span>
+                        <button
+                            type="button"
+                            class="count-btn plus"
+                            on:click={() => incrementGroup(option.key)}
+                        >+</button>
+                    </div>
+                </div>
+            {/each}
         </div>
 
-        <div class="number-input">
-            <h4>🥬 Vegetarians</h4>
-            <input
-                bind:value={vegetarians}
-                on:change={onChange}
-                type="number"
-                min="0"
-                max={people}
-            />
-            <span class="veg-hint">
-                {#if vegetarians === 0}
-                    meat lovers only 🥩
-                {:else if vegetarians === people}
-                    all veggie! 🌱
-                {:else}
-                    mixed crowd 🥗
-                {/if}
-            </span>
-        </div>
+        {#if totalPeople === 0}
+            <div class="warning-box">
+                <span class="warning-icon">⚠️</span>
+                <span>Add at least one person to calculate!</span>
+            </div>
+        {/if}
     </div>
 
     <div class="submit-section">
-        <button type="submit">
+        <button type="submit" disabled={totalPeople === 0}>
             🔥 Calculate the 'Za! 🔥
         </button>
     </div>
 
-    {#if result > 0}
+    {#if result}
         <div class="result" class:celebrating={showCelebration}>
-            <div class="result-box">
-                <span class="result-label">You need</span>
-                <span class="result-number">{result}</span>
-                <span class="result-text">pizza{result > 1 ? "s" : ""}!</span>
-
-                <div class="result-pizzas">
-                    {#each Array(Math.min(result, 10)) as _, i}
-                        <span class="result-pizza" style="animation-delay: {i * 0.1}s">🍕</span>
-                    {/each}
-                    {#if result > 10}
-                        <span class="more-pizzas">+{result - 10} more!</span>
+            <div class="result-box complexity-{result.complexity}">
+                <div class="complexity-banner">
+                    {#if result.complexity === 'simple'}
+                        <span class="complexity-icon">😎</span>
+                        <span class="complexity-label">Simple Order</span>
+                    {:else if result.complexity === 'moderate'}
+                        <span class="complexity-icon">🤔</span>
+                        <span class="complexity-label">Moderate Order</span>
+                    {:else if result.complexity === 'complex'}
+                        <span class="complexity-icon">😬</span>
+                        <span class="complexity-label">Complex Order</span>
+                    {:else}
+                        <span class="complexity-icon">🤯</span>
+                        <span class="complexity-label">Chaotic Order!</span>
                     {/if}
                 </div>
 
-                {#if vegetarians > 0}
-                    <div class="veggie-note">
-                        <span class="veggie-icon">🌿</span>
-                        Remember: at least {Math.ceil(result * (vegetarians / people))} should be veggie-friendly!
+                <div class="complexity-message">
+                    {getComplexityMessage(result.complexity)}
+                </div>
+
+                <div class="total-pizzas">
+                    <span class="result-label">You need</span>
+                    <span class="result-number">{result.total}</span>
+                    <span class="result-text">pizza{result.total > 1 ? 's' : ''}!</span>
+                </div>
+
+                <div class="pizza-breakdown">
+                    {#if result.meat > 0}
+                        <div class="breakdown-item meat">
+                            <span class="breakdown-count">{result.meat}</span>
+                            <span class="breakdown-type">🥩 Meat</span>
+                        </div>
+                    {/if}
+                    {#if result.veggie > 0}
+                        <div class="breakdown-item veggie">
+                            <span class="breakdown-count">{result.veggie}</span>
+                            <span class="breakdown-type">🥬 Veggie</span>
+                        </div>
+                    {/if}
+                    {#if result.glutenFree > 0}
+                        <div class="breakdown-item gf">
+                            <span class="breakdown-count">{result.glutenFree}</span>
+                            <span class="breakdown-type">🌾 GF</span>
+                        </div>
+                    {/if}
+                </div>
+
+                <div class="result-pizzas">
+                    {#each Array(Math.min(result.total, 10)) as _, i}
+                        <span class="result-pizza" style="animation-delay: {i * 0.1}s">🍕</span>
+                    {/each}
+                    {#if result.total > 10}
+                        <span class="more-pizzas">+{result.total - 10} more!</span>
+                    {/if}
+                </div>
+
+                {#if result.notes.length > 0}
+                    <div class="order-notes">
+                        <h5>📋 Order Notes:</h5>
+                        <ul>
+                            {#each result.notes as note}
+                                <li>{note}</li>
+                            {/each}
+                        </ul>
                     </div>
                 {/if}
             </div>
@@ -359,28 +500,11 @@
         z-index: 1;
     }
 
-    .numbers-section {
-        display: flex;
-        gap: 30px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .number-input {
-        text-align: center;
-        flex: 1;
-        min-width: 150px;
-    }
-
-    .number-input h4 {
-        margin-bottom: 10px;
-    }
-
-    .input-with-unit {
+    .size-control {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
     .unit {
@@ -388,12 +512,162 @@
         font-size: 1rem;
     }
 
-    .size-hint, .people-hint, .veg-hint {
-        display: block;
-        margin-top: 8px;
-        font-size: 0.9rem;
+    .size-hint {
+        font-size: 0.95rem;
         color: #ff7043;
-        min-height: 1.5em;
+        margin-left: 10px;
+    }
+
+    /* Dietary Section Styles */
+    .dietary-section h4 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .total-badge {
+        background: linear-gradient(180deg, #4caf50 0%, #388e3c 100%);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+
+    .dietary-hint {
+        color: #8d6e63;
+        margin: 5px 0 15px 0;
+        font-size: 0.95rem;
+    }
+
+    .dietary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+    }
+
+    .dietary-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: white;
+        border: 3px solid #e0e0e0;
+        border-radius: 15px;
+        transition: all 0.2s ease;
+    }
+
+    .dietary-card:hover {
+        border-color: var(--accent-color);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .dietary-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .dietary-emoji {
+        font-size: 2rem;
+    }
+
+    .dietary-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dietary-title {
+        font-family: 'Chewy', cursive;
+        font-size: 1.2rem;
+        color: #5d4037;
+    }
+
+    .dietary-desc {
+        font-size: 0.8rem;
+        color: #9e9e9e;
+    }
+
+    .dietary-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .count-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #e0e0e0;
+        background: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        padding: 0;
+        line-height: 1;
+        box-shadow: none;
+    }
+
+    .count-btn:hover:not(:disabled) {
+        transform: scale(1.1);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .count-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .count-btn.minus {
+        color: #e53935;
+        border-color: #ffcdd2;
+    }
+
+    .count-btn.minus:hover:not(:disabled) {
+        background: #ffebee;
+        border-color: #e53935;
+    }
+
+    .count-btn.plus {
+        color: #43a047;
+        border-color: #c8e6c9;
+    }
+
+    .count-btn.plus:hover:not(:disabled) {
+        background: #e8f5e9;
+        border-color: #43a047;
+    }
+
+    .count-value {
+        font-family: 'Chewy', cursive;
+        font-size: 1.8rem;
+        min-width: 40px;
+        text-align: center;
+        color: #bdbdbd;
+        transition: all 0.2s ease;
+    }
+
+    .count-value.has-value {
+        color: #5d4037;
+    }
+
+    .warning-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 15px;
+        padding: 12px 20px;
+        background: #fff3e0;
+        border: 2px solid #ffb74d;
+        border-radius: 10px;
+        color: #e65100;
+    }
+
+    .warning-icon {
+        font-size: 1.3rem;
     }
 
     .submit-section {
@@ -401,6 +675,13 @@
         margin: 40px 0;
     }
 
+    button[type="submit"]:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    /* Result Styles */
     .result {
         margin-top: 30px;
         animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
@@ -415,9 +696,65 @@
         background: linear-gradient(180deg, #fff9c4 0%, #fff59d 100%);
         border: 4px solid #ffd54f;
         border-radius: 20px;
-        padding: 30px;
+        padding: 25px;
         text-align: center;
         box-shadow: 0 5px 20px rgba(255, 213, 79, 0.4);
+    }
+
+    .result-box.complexity-simple {
+        background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%);
+        border-color: #81c784;
+    }
+
+    .result-box.complexity-moderate {
+        background: linear-gradient(180deg, #fff9c4 0%, #fff59d 100%);
+        border-color: #ffd54f;
+    }
+
+    .result-box.complexity-complex {
+        background: linear-gradient(180deg, #fff3e0 0%, #ffe0b2 100%);
+        border-color: #ffb74d;
+    }
+
+    .result-box.complexity-chaotic {
+        background: linear-gradient(180deg, #ffebee 0%, #ffcdd2 100%);
+        border-color: #ef9a9a;
+        animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px) rotate(-1deg); }
+        75% { transform: translateX(5px) rotate(1deg); }
+    }
+
+    .complexity-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .complexity-icon {
+        font-size: 2rem;
+    }
+
+    .complexity-label {
+        font-family: 'Chewy', cursive;
+        font-size: 1.3rem;
+        color: #5d4037;
+    }
+
+    .complexity-message {
+        font-size: 1rem;
+        color: #8d6e63;
+        margin-bottom: 20px;
+        font-style: italic;
+    }
+
+    .total-pizzas {
+        margin-bottom: 20px;
     }
 
     .result-label {
@@ -448,8 +785,48 @@
         color: #5d4037;
     }
 
+    .pizza-breakdown {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .breakdown-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 20px;
+        border-radius: 15px;
+        min-width: 80px;
+    }
+
+    .breakdown-item.meat {
+        background: linear-gradient(180deg, #ffcdd2 0%, #ef9a9a 100%);
+    }
+
+    .breakdown-item.veggie {
+        background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
+    }
+
+    .breakdown-item.gf {
+        background: linear-gradient(180deg, #ffe0b2 0%, #ffcc80 100%);
+    }
+
+    .breakdown-count {
+        font-family: 'Chewy', cursive;
+        font-size: 2rem;
+        color: #5d4037;
+    }
+
+    .breakdown-type {
+        font-size: 0.9rem;
+        color: #5d4037;
+    }
+
     .result-pizzas {
-        margin-top: 20px;
+        margin: 20px 0;
         font-size: 2rem;
     }
 
@@ -474,17 +851,35 @@
         vertical-align: middle;
     }
 
-    .veggie-note {
+    .order-notes {
         margin-top: 20px;
-        padding: 15px;
-        background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
-        border-radius: 12px;
-        color: #2e7d32;
-        font-size: 1rem;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 15px;
+        text-align: left;
     }
 
-    .veggie-icon {
-        margin-right: 8px;
+    .order-notes h5 {
+        margin: 0 0 10px 0;
+        font-family: 'Chewy', cursive;
+        font-size: 1.2rem;
+        color: #5d4037;
+    }
+
+    .order-notes ul {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .order-notes li {
+        padding: 8px 0;
+        border-bottom: 1px dashed #e0e0e0;
+        font-size: 0.95rem;
+    }
+
+    .order-notes li:last-child {
+        border-bottom: none;
     }
 
     .pro-tip {
@@ -545,13 +940,21 @@
             grid-template-columns: 1fr;
         }
 
-        .numbers-section {
-            flex-direction: column;
-            align-items: center;
+        .dietary-grid {
+            grid-template-columns: 1fr;
         }
 
         .result-number {
             font-size: 4rem;
+        }
+
+        .pizza-breakdown {
+            gap: 10px;
+        }
+
+        .breakdown-item {
+            padding: 10px 15px;
+            min-width: 70px;
         }
     }
 </style>
